@@ -2633,6 +2633,8 @@ static void SetupUserMode(SCInstance *suri)
  * This function is meant to contain code that needs
  * to be run once the configuration has been loaded.
  */
+// 根据配置文件的设置,对各个模块和组件进行必要的初始化和配置,
+// 并建立它们之间的关联和协作关系
 int PostConfLoadedSetup(SCInstance *suri)
 {
     /* do this as early as possible #1577 #1955 */
@@ -2740,6 +2742,7 @@ int PostConfLoadedSetup(SCInstance *suri)
     /* hardcoded initialization code */
     SigTableSetup(); /* load the rule keywords */
     SigTableApplyStrictCommandLineOption(suri->strict_rule_parsing_string);
+    // 注册队列处理程序，填充tmqh_table
     TmqhSetup();
 
     TagInitCtx();
@@ -2759,6 +2762,7 @@ int PostConfLoadedSetup(SCInstance *suri)
     }
 
     FeatureTrackingRegister(); /* must occur prior to output mod registration */
+    // 注册线程模块，填充tmm_modules
     RegisterAllModules();
 #ifdef HAVE_PLUGINS
     SCPluginsLoad(suri->capture_plugin_name, suri->capture_plugin_args);
@@ -2767,6 +2771,7 @@ int PostConfLoadedSetup(SCInstance *suri)
 
     StorageFinalize();
 
+    // 运行所有线程模块的Init函数
     TmModuleRunInit();
 
     if (MayDaemonize(suri) != TM_ECODE_OK)
@@ -2890,8 +2895,11 @@ int InitGlobal(void)
 
 int SuricataMain(int argc, char **argv)
 {
+    // 配置项赋初始值
     SCInstanceInit(&suricata, argv[0]);
 
+    // 信号处理器安装；原子变量初始化；日志模块初始化；运行模式注册；
+    // 
     if (InitGlobal() != 0) {
         exit(EXIT_FAILURE);
     }
@@ -2903,10 +2911,12 @@ int SuricataMain(int argc, char **argv)
     }
 #endif /* OS_WIN32 */
 
+    // 解析启动参数
     if (ParseCommandLine(argc, argv, &suricata) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
 
+    // 检查运行模式组合的合法性
     if (FinalizeRunMode(&suricata, argv) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
@@ -2922,6 +2932,7 @@ int SuricataMain(int argc, char **argv)
     GlobalsInitPreConfig();
 
     /* Load yaml configuration file if provided. */
+    // 解析yaml配置并添加
     if (LoadYamlConfig(&suricata) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
@@ -2954,10 +2965,12 @@ int SuricataMain(int argc, char **argv)
     if (suricata.run_mode == RUNMODE_CONF_TEST)
         SCLogInfo("Running suricata under test mode");
 
+    // 配置抓包网卡
     if (ParseInterfacesList(suricata.aux_run_mode, suricata.pcap_dev) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
 
+    // 根据配置文件的设置,对各个模块和组件进行必要的初始化和配置,并建立它们之间的关联和协作关系
     if (PostConfLoadedSetup(&suricata) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
@@ -2987,6 +3000,7 @@ int SuricataMain(int argc, char **argv)
     }
 
     SCSetStartTime(&suricata);
+    // 启动工作线程
     RunModeDispatch(suricata.run_mode, suricata.runmode_custom_mode,
             suricata.capture_plugin_name, suricata.capture_plugin_args);
     if (suricata.run_mode != RUNMODE_UNIX_SOCKET) {

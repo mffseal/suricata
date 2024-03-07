@@ -35,8 +35,11 @@ enum {
 
 typedef struct Tmqh_ {
     const char *name;
+    // 负责从输入队列中获取数据包或事件,并将其传递给当前线程模块进行处理。
     Packet *(*InHandler)(ThreadVars *);
+    // 线程模块被关闭或停止时，确保模块能够正常地清理和释放所占用的资源。
     void (*InShutdownHandler)(ThreadVars *);
+    // 将处理后的数据包或事件写入输出队列,以便将其传递给下一个线程模块或输出模块。
     void (*OutHandler)(ThreadVars *, Packet *);
     void *(*OutHandlerCtxSetup)(const char *);
     void (*OutHandlerCtxFree)(void *);

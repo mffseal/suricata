@@ -38,8 +38,14 @@ int RunModeIdsPcapWorkers(void);
 
 void RunModeIdsPcapRegister(void)
 {
+    // suricata的三种工作模式
+
+    // 单工作线程
     RunModeRegisterNewRunMode(RUNMODE_PCAP_DEV, "single", "Single threaded pcap live mode",
             RunModeIdsPcapSingle, NULL);
+    // 多工作线程
+    // 模式编号、名称配置；线程处理器配置；线程创建预设；线程栈大小；计时器；
+    // 
     RunModeRegisterNewRunMode(RUNMODE_PCAP_DEV, "autofp",
             "Multi threaded pcap live mode.  Packets from "
             "each flow are assigned to a single detect thread, "
@@ -47,6 +53,7 @@ void RunModeIdsPcapRegister(void)
             "the same flow can be processed by any detect "
             "thread",
             RunModeIdsPcapAutoFp, NULL);
+    // 多收包线程+多工作线程混合
     RunModeRegisterNewRunMode(RUNMODE_PCAP_DEV, "workers",
             "Workers pcap live mode, each thread does all"
             " tasks from acquisition to logging",

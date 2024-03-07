@@ -93,11 +93,11 @@ const char *thread_name_counter_wakeup = "CW";
  */
 typedef struct RunMode_ {
     /* the runmode type */
-    enum RunModes runmode;
+    enum RunModes runmode;  // 抓包模式枚举值
     const char *name;
     const char *description;
     /* runmode function */
-    int (*RunModeFunc)(void);
+    int (*RunModeFunc)(void);  // <--RunModeDispatch(), 负责线程模型初始化、创建线程模块。。。
     void (*RunModeIsIPSEnabled)(void);
 } RunMode;
 
@@ -236,10 +236,12 @@ const char *RunModeGetMainMode(void)
 /**
  * \brief Register all runmodes in the engine.
  */
+ // 注册列出的所有模式的配置
 void RunModeRegisterRunModes(void)
 {
     memset(runmodes, 0, sizeof(runmodes));
 
+    // 配置各运行模式的参数以及线程
     RunModeIdsPcapRegister();
     RunModeFilePcapRegister();
     RunModeIdsPfringRegister();
@@ -446,6 +448,7 @@ void RunModeDispatch(int runmode, const char *custom_mode, const char *capture_p
         TmqhFlowPrintAutofpHandler();
     }
 
+    // 配置并启动线程
     mode->RunModeFunc();
 
     if (local_custom_mode != NULL)
@@ -488,6 +491,7 @@ int RunModeNeedsBypassManager(void)
  * \param description Description for this runmode.
  * \param RunModeFunc The function to be run for this runmode.
  */
+ // 通用运行模式注册函数
 void RunModeRegisterNewRunMode(enum RunModes runmode, const char *name, const char *description,
         int (*RunModeFunc)(void), void (*RunModeIsIPSEnabled)(void))
 {

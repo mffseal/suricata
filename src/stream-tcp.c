@@ -5318,6 +5318,7 @@ int StreamTcpPacket (ThreadVars *tv, Packet *p, StreamTcpThread *stt,
 
     SCLogDebug("p->pcap_cnt %"PRIu64, p->pcap_cnt);
 
+    // 获取tcp会话当前状态
     TcpSession *ssn = (TcpSession *)p->flow->protoctx;
 
     /* track TCP flags */
@@ -5356,6 +5357,7 @@ int StreamTcpPacket (ThreadVars *tv, Packet *p, StreamTcpThread *stt,
         SCReturnInt(0);
     }
 
+    // 如果没有会话信息则创建
     if (ssn == NULL || ssn->state == TCP_NONE) {
         if (StreamTcpPacketStateNone(tv, p, stt, ssn) == -1) {
             goto error;
@@ -5430,6 +5432,7 @@ int StreamTcpPacket (ThreadVars *tv, Packet *p, StreamTcpThread *stt,
         }
 
         /* handle the per 'state' logic */
+        // 更新tcp流状态
         if (StreamTcpStateDispatch(tv, p, stt, ssn, ssn->state) < 0)
             goto error;
 
@@ -5712,6 +5715,7 @@ TmEcode StreamTcp (ThreadVars *tv, Packet *p, void *data, PacketQueueNoLock *pq)
         return TM_ECODE_OK;
     }
 
+    // 获取之前已经初始化好的StreamTcpThread结构体
     StreamTcpThread *stt = (StreamTcpThread *)data;
 
     SCLogDebug("p->pcap_cnt %" PRIu64 " direction %s pkt_src %s", p->pcap_cnt,
@@ -5720,6 +5724,7 @@ TmEcode StreamTcp (ThreadVars *tv, Packet *p, void *data, PacketQueueNoLock *pq)
             PktSrcToString(p->pkt_src));
     t_pcapcnt = p->pcap_cnt;
 
+    // 若不是TCP包，则直接返回
     if (!(PKT_IS_TCP(p))) {
         return TM_ECODE_OK;
     }
@@ -5729,6 +5734,7 @@ TmEcode StreamTcp (ThreadVars *tv, Packet *p, void *data, PacketQueueNoLock *pq)
     /* only TCP packets with a flow from here */
 
     if (!(p->flags & PKT_PSEUDO_STREAM_END)) {
+        // 根据stream_config配置选择是否对数据包进行校验
         if (stream_config.flags & STREAMTCP_INIT_FLAG_CHECKSUM_VALIDATION) {
             if (StreamTcpValidateChecksum(p) == 0) {
                 StatsIncr(tv, stt->counter_tcp_invalid_checksum);
@@ -5742,6 +5748,7 @@ TmEcode StreamTcp (ThreadVars *tv, Packet *p, void *data, PacketQueueNoLock *pq)
     }
     AppLayerProfilingReset(stt->ra_ctx->app_tctx);
 
+    // 关键的下一步操作
     (void)StreamTcpPacket(tv, p, stt, pq);
 
     return TM_ECODE_OK;

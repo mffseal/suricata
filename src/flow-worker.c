@@ -569,6 +569,7 @@ static TmEcode FlowWorker(ThreadVars *tv, Packet *p, void *data)
     if (p->flags & PKT_WANTS_FLOW) {
         FLOWWORKER_PROFILING_START(p, PROFILE_FLOWWORKER_FLOW);
 
+        // 为packet找到对应的流
         FlowHandlePacket(tv, &fw->fls, p);
         if (likely(p->flow != NULL)) {
             DEBUG_ASSERT_FLOW_LOCKED(p->flow);

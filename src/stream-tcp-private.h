@@ -110,13 +110,13 @@ typedef struct TcpStream_ {
     uint8_t os_policy;              /**< target based OS policy used for reassembly and handling packets*/
     uint8_t tcp_flags;              /**< TCP flags seen */
 
-    uint32_t isn;                   /**< initial sequence number */
-    uint32_t next_seq;              /**< next expected sequence number */
-    uint32_t last_ack;              /**< last ack'd sequence number in this stream */
+    uint32_t isn;                   /**< initial sequence number */  // 初始seq号
+    uint32_t next_seq;              /**< next expected sequence number */  // 当前预期seq号
+    uint32_t last_ack;              /**< last ack'd sequence number in this stream */  // 当前最新ACK号
     uint32_t next_win;              /**< next max seq within window */
     uint32_t window;                /**< current window setting, after wscale is applied */
 
-    uint32_t last_ts;               /**< Time stamp (TSVAL) of the last seen packet for this stream*/
+    uint32_t last_ts;               /**< Time stamp (TSVAL) of the last seen packet for this stream*/  // 上次包时间戳
     uint32_t last_pkt_ts;           /**< Time of last seen packet for this stream (needed for PAWS update)
                                          This will be used to validate the last_ts, when connection has been idle for
                                          longer time.(RFC 1323)*/
@@ -287,12 +287,12 @@ typedef struct TcpSession_ {
     uint8_t queue_len;                      /**< length of queue list below */
     int8_t data_first_seen_dir;
     /** track all the tcp flags we've seen */
-    uint8_t tcp_packet_flags;
+    uint8_t tcp_packet_flags;  // 双向tcp头所有flag
     /* coccinelle: TcpSession:flags:STREAMTCP_FLAG */
     uint32_t flags;
     uint32_t reassembly_depth; /**< reassembly depth for the stream */
-    TcpStream server;
-    TcpStream client;
+    TcpStream server;  // 保存单向数据流的全部信息
+    TcpStream client;  // 保存单向数据流的全部信息
     TcpStateQueue *queue;                   /**< list of SYN/ACK candidates */
 } TcpSession;
 

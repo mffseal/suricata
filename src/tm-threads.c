@@ -636,13 +636,14 @@ error:
  *
  * \retval The allocated TmSlot or NULL if there is an error
  */
+ // 配置Slot并设置功能，再添加到Slot链表。
 void TmSlotSetFuncAppend(ThreadVars *tv, TmModule *tm, const void *data)
 {
     TmSlot *slot = SCMalloc(sizeof(TmSlot));
     if (unlikely(slot == NULL))
         return;
     memset(slot, 0, sizeof(TmSlot));
-    SC_ATOMIC_INITPTR(slot->slot_data);
+    SC_ATOMIC_INITPTR(slot->slot_data);  //TODO 为什么要用原子操作？
     slot->SlotThreadInit = tm->ThreadInit;
     slot->slot_initdata = data;
     if (tm->Func) {

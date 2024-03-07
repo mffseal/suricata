@@ -59,6 +59,7 @@ typedef struct TmSlot_ {
     };
     /** linked list of slots, used when a pipeline has multiple slots
      *  in a single thread. */
+     // slot链表指针
     struct TmSlot_ *slot_next;
 
     SC_ATOMIC_DECLARE(void *, slot_data);

@@ -49,6 +49,8 @@ typedef struct TmModule_ {
     TmEcode (*ThreadDeinit)(ThreadVars *, void *);
 
     /** the packet processing function */
+    // 创建slot时，Func、PktAcqLoop二选一注册一个
+    // 线程的工作函数，处理实际的工作。
     TmEcode (*Func)(ThreadVars *, Packet *, void *);
 
     TmEcode (*PktAcqLoop)(ThreadVars *, void *, void *);

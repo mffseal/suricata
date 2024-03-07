@@ -121,16 +121,19 @@ int RunModeSetLiveCaptureAutoFp(ConfigIfaceParserFunc ConfigParser,
             if (tv_receive == NULL) {
                 FatalError("TmThreadsCreate failed");
             }
+            // 获取收包线程模块
             TmModule *tm_module = TmModuleGetByName(recv_mod_name);
             if (tm_module == NULL) {
                 FatalError("TmModuleGetByName failed for %s", recv_mod_name);
             }
+            // 创建收包slot并追加
             TmSlotSetFuncAppend(tv_receive, tm_module, aconf);
-
+            // 获取解码线程模块
             tm_module = TmModuleGetByName(decode_mod_name);
             if (tm_module == NULL) {
                 FatalError("TmModuleGetByName %s failed", decode_mod_name);
             }
+            // 创建解码slot并追加
             TmSlotSetFuncAppend(tv_receive, tm_module, NULL);
 
             TmThreadSetCPU(tv_receive, RECEIVE_CPU_SET);

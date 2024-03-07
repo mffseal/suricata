@@ -34,6 +34,8 @@
 #include "tmqh-packetpool.h"
 #include "tmqh-flow.h"
 
+// 线程模块队列头表
+// 负责管理和处理线程间消息传递队列（包含数据包、事件）
 Tmqh tmqh_table[TMQH_SIZE];
 
 void TmqhSetup (void)
