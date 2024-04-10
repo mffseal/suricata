@@ -2561,6 +2561,7 @@ void PostConfLoadedDetectSetup(SCInstance *suri)
         } else if (mt_enabled && !default_tenant && suri->run_mode != RUNMODE_CONF_TEST) {
             de_ctx = DetectEngineCtxInitStubForMT();
         } else {
+            // 检测引擎初始化
             de_ctx = DetectEngineCtxInit();
         }
         if (de_ctx == NULL) {
@@ -2568,6 +2569,9 @@ void PostConfLoadedDetectSetup(SCInstance *suri)
         }
 
         if (de_ctx->type == DETECT_ENGINE_TYPE_NORMAL) {
+            // 规则加载、解析、排序 --> de_ctx.sig_list
+            // 一个sig对应一条suricata规则
+            // sig中的一个match对应规则中一条kv
             if (LoadSignatures(de_ctx, suri) != TM_ECODE_OK)
                 exit(EXIT_FAILURE);
         }
@@ -2740,6 +2744,7 @@ int PostConfLoadedSetup(SCInstance *suri)
     }
 
     /* hardcoded initialization code */
+    // IDS规则装载
     SigTableSetup(); /* load the rule keywords */
     SigTableApplyStrictCommandLineOption(suri->strict_rule_parsing_string);
     // 注册队列处理程序，填充tmqh_table
@@ -2774,9 +2779,11 @@ int PostConfLoadedSetup(SCInstance *suri)
     // 运行所有线程模块的Init函数
     TmModuleRunInit();
 
+    // 配置守护线程pid文件
     if (MayDaemonize(suri) != TM_ECODE_OK)
         SCReturnInt(TM_ECODE_FAILED);
 
+    // 初始化信号处理器
     if (InitSignalHandler(suri) != TM_ECODE_OK)
         SCReturnInt(TM_ECODE_FAILED);
 
@@ -2970,7 +2977,8 @@ int SuricataMain(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    // 根据配置文件的设置,对各个模块和组件进行必要的初始化和配置,并建立它们之间的关联和协作关系
+    // 根据配置文件的设置,对各个模块和组件进行必要的初始化和配置,并建立它们之间的关联和协作关系：
+    // - 检测引擎规则解析器注册
     if (PostConfLoadedSetup(&suricata) != TM_ECODE_OK) {
         exit(EXIT_FAILURE);
     }
@@ -2988,6 +2996,7 @@ int SuricataMain(int argc, char **argv)
 
     LandlockSandboxing(&suricata);
 
+    // 检测引擎上下文初始化
     PostConfLoadedDetectSetup(&suricata);
     if (suricata.run_mode == RUNMODE_ENGINE_ANALYSIS) {
         goto out;
@@ -3000,7 +3009,7 @@ int SuricataMain(int argc, char **argv)
     }
 
     SCSetStartTime(&suricata);
-    // 启动工作线程
+    // 根据配置选取RunMode项，再调用。
     RunModeDispatch(suricata.run_mode, suricata.runmode_custom_mode,
             suricata.capture_plugin_name, suricata.capture_plugin_args);
     if (suricata.run_mode != RUNMODE_UNIX_SOCKET) {

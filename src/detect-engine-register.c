@@ -459,6 +459,7 @@ void SigTableSetup(void)
 {
     memset(sigmatch_table, 0, sizeof(sigmatch_table));
 
+    // IDS规则按分配装载
     DetectSidRegister();
     DetectPriorityRegister();
     DetectPrefilterRegister();

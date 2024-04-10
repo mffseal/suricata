@@ -253,6 +253,7 @@ char HashListTableDefaultCompare(void *data1, uint16_t len1, void *data2, uint16
     return 1;
 }
 
+// 查找Hash表
 void *HashListTableLookup(HashListTable *ht, void *data, uint16_t datalen)
 {
 

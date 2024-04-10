@@ -102,7 +102,7 @@ static uint32_t DetectEngineTenantGetIdFromLivedev(const void *ctx, const Packet
 static uint32_t DetectEngineTenantGetIdFromVlanId(const void *ctx, const Packet *p);
 static uint32_t DetectEngineTenantGetIdFromPcap(const void *ctx, const Packet *p);
 
-static DetectEngineAppInspectionEngine *g_app_inspect_engines = NULL;
+static DetectEngineAppInspectionEngine *g_app_inspect_engines = NULL;  // IDS引擎链表
 static DetectEnginePktInspectionEngine *g_pkt_inspect_engines = NULL;
 static DetectEngineFrameInspectionEngine *g_frame_inspect_engines = NULL;
 
@@ -212,6 +212,7 @@ void DetectFrameInspectEngineRegister(const char *name, int dir,
 /** \brief register inspect engine at start up time
  *
  *  \note errors are fatal */
+// 将当前规则的匹配函数挂载到g_pkt_inspect_engines
 void DetectAppLayerInspectEngineRegister2(const char *name,
         AppProto alproto, uint32_t dir, int progress,
         InspectEngineFuncPtr2 Callback2,
@@ -247,6 +248,7 @@ void DetectAppLayerInspectEngineRegister2(const char *name,
         direction = 1;
     }
 
+    // 实例化目标探测引擎
     DetectEngineAppInspectionEngine *new_engine = SCMalloc(sizeof(DetectEngineAppInspectionEngine));
     if (unlikely(new_engine == NULL)) {
         exit(EXIT_FAILURE);
@@ -268,6 +270,7 @@ void DetectAppLayerInspectEngineRegister2(const char *name,
             t = t->next;
         }
 
+        // 挂载到g_app_inspect_engines链表上
         t->next = new_engine;
     }
 }
@@ -2457,6 +2460,9 @@ retry:
     return -1;
 }
 
+// 检测引擎初始化：
+// 配置、阈值、规则type、模式匹配引擎。。。
+// g_app_mpms_list --> 引擎的app_mpms_list字段
 static DetectEngineCtx *DetectEngineCtxInitReal(enum DetectEngineType type, const char *prefix)
 {
     DetectEngineCtx *de_ctx = SCMalloc(sizeof(DetectEngineCtx));

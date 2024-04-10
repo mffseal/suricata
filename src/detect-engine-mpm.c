@@ -79,6 +79,7 @@ const char *builtin_mpms[] = {
  * Keywords are registered at engine start up
  */
 
+// IDS快速匹配引擎链表
 static DetectBufferMpmRegistry *g_mpm_list[DETECT_BUFFER_MPM_TYPE_SIZE] = { NULL, NULL, NULL };
 static int g_mpm_list_cnt[DETECT_BUFFER_MPM_TYPE_SIZE] = { 0, 0, 0 };
 
@@ -917,8 +918,15 @@ void PatternMatchThreadPrepare(MpmThreadCtx *mpm_thread_ctx, uint16_t mpm_matche
  *
  *  \retval s pattern score
  */
+// 根据模式的字符多样性和长度来评估模式的强度。
+// 具有高字符多样性的模式得分较高。
+// 字母字符的得分不太高。
+// 其他可打印字符和一些常见的特殊字符（如0x00、0x01和0xFF）的得分稍高。
+// 其他所有字符的得分最高。
+// 较长的模式比较短的模式得分更高。
 uint32_t PatternStrength(uint8_t *pat, uint16_t patlen)
 {
+    // 用于跟踪模式中每个字符的出现次数
     uint8_t a[256];
     memset(&a, 0 ,sizeof(a));
 
@@ -1027,9 +1035,11 @@ static void SetMpm(Signature *s, SigMatch *mpm_sm, const int mpm_sm_list)
     return;
 }
 
+// 遍历签名匹配项列表,根据内容长度、是否为否定内容以及内容强度等条件,选择最佳的 MPM 匹配项
 static SigMatch *GetMpmForList(const Signature *s, SigMatch *list, SigMatch *mpm_sm,
         uint16_t max_len, bool skip_negated_content)
 {
+    // 遍历sm，每次都保存正则多样性得分更高的match
     for (SigMatch *sm = list; sm != NULL; sm = sm->next) {
         if (sm->type != DETECT_CONTENT)
             continue;
@@ -1048,6 +1058,7 @@ static SigMatch *GetMpmForList(const Signature *s, SigMatch *list, SigMatch *mpm
         } else {
             DetectContentData *data1 = (DetectContentData *)sm->ctx;
             DetectContentData *data2 = (DetectContentData *)mpm_sm->ctx;
+            // 比较正则多样性得分
             uint32_t ls = PatternStrength(data1->content, data1->content_len);
             uint32_t ss = PatternStrength(data2->content, data2->content_len);
             if (ls > ss) {
@@ -1066,12 +1077,15 @@ static SigMatch *GetMpmForList(const Signature *s, SigMatch *list, SigMatch *mpm
 
 void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
 {
+    // 检查是否已经找到快速模式匹配
     if (s->init_data->mpm_sm != NULL)
         return;
 
+    // *_sm_list的大小，和 g_fp_support_smlist_list是一样的
+    // 下标也是一一对应的
     const int nlists = s->init_data->max_content_list_id + 1;
-    int pos_sm_list[nlists];
-    int neg_sm_list[nlists];
+    int pos_sm_list[nlists];  // 肯定正则，content:"hack"
+    int neg_sm_list[nlists];  // 否定正则，content:!"safe"
     memset(pos_sm_list, 0, nlists * sizeof(int));
     memset(neg_sm_list, 0, nlists * sizeof(int));
     int pos_sm_list_cnt = 0;
@@ -1079,8 +1093,12 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
 
     /* inspect rule to see if we have the fast_pattern reg to
      * force using a sig, otherwise keep stats about the patterns */
+     // 检查sig中所有DETECT_SM_LIST_PMATCH类型的match
     if (s->init_data->smlists[DETECT_SM_LIST_PMATCH] != NULL) {
+        // 检查match是否支持快速模式
+        // 这里只检查de_ctx->fp_support_smlist_list是否非NULL
         if (FastPatternSupportEnabledForSigMatchList(de_ctx, DETECT_SM_LIST_PMATCH)) {
+            // 遍历sig中的所有DETECT_SM_LIST_PMATCH类型的match
             for (SigMatch *sm = s->init_data->smlists[DETECT_SM_LIST_PMATCH]; sm != NULL;
                     sm = sm->next) {
                 if (sm->type != DETECT_CONTENT)
@@ -1088,11 +1106,14 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
 
                 const DetectContentData *cd = (DetectContentData *)sm->ctx;
                 /* fast_pattern set in rule, so using this pattern */
+                // 规则里明确指明了使用该内容作为快速匹配
+                // 直接采纳并返回
                 if ((cd->flags & DETECT_CONTENT_FAST_PATTERN)) {
                     SetMpm(s, sm, DETECT_SM_LIST_PMATCH);
                     return;
                 }
 
+                // 根据内容是追踪还是否定来更新对应数组和计数器
                 if (cd->flags & DETECT_CONTENT_NEGATED) {
                     neg_sm_list[DETECT_SM_LIST_PMATCH] = 1;
                     neg_sm_list_cnt++;
@@ -1103,6 +1124,8 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
             }
         }
     }
+
+    // 遍历sig的所有类型数据包的buffer
     for (uint32_t x = 0; x < s->init_data->buffer_index; x++) {
         const int list_id = s->init_data->buffers[x].id;
 
@@ -1114,12 +1137,14 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
             continue;
         }
 
+        // 遍历当前buffer中每个match
         for (SigMatch *sm = s->init_data->buffers[x].head; sm != NULL; sm = sm->next) {
             if (sm->type != DETECT_CONTENT)
                 continue;
 
             const DetectContentData *cd = (DetectContentData *)sm->ctx;
             /* fast_pattern set in rule, so using this pattern */
+            // 规则里明确指明了使用该内容作为快速匹配
             if ((cd->flags & DETECT_CONTENT_FAST_PATTERN)) {
                 SetMpm(s, sm, list_id);
                 return;
@@ -1139,6 +1164,8 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
 
     SCLogDebug("neg_sm_list_cnt %d pos_sm_list_cnt %d", neg_sm_list_cnt, pos_sm_list_cnt);
 
+    // 倾向于使用正向正则作为curr_sm_list供后续处理
+    // 如果没有任何match就直接返回
     /* prefer normal not-negated over negated */
     int *curr_sm_list = NULL;
     int skip_negated_content = 1;
@@ -1157,6 +1184,7 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
     int count_final_sm_list = 0;
     int priority;
 
+    // 遍历fp_support_smlist_list链表，优先级是从高到低的
     const SCFPSupportSMList *tmp = de_ctx->fp_support_smlist_list;
     while (tmp != NULL) {
         for (priority = tmp->priority;
@@ -1164,13 +1192,17 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
              tmp = tmp->next)
         {
             SCLogDebug("tmp->list_id %d tmp->priority %d", tmp->list_id, tmp->priority);
+            // 超出了有效范围
             if (tmp->list_id >= nlists)
                 continue;
+            // 该 list_id 在 curr_sm_list 中没有对应的match
+            // fp_support_smlist_list 中的 list_id 可以直接用作 curr_sm_list 数组的索引
             if (curr_sm_list[tmp->list_id] == 0)
                 continue;
             final_sm_list[count_final_sm_list++] = tmp->list_id;
             SCLogDebug("tmp->list_id %d", tmp->list_id);
         }
+        // 已经找到了至少一个有效的 list_id
         if (count_final_sm_list != 0)
             break;
     }
@@ -1179,10 +1211,12 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
     SCLogDebug("count_final_sm_list %d skip_negated_content %d", count_final_sm_list,
             skip_negated_content);
 
+    // 遍历找到长度最长的，代表特征最明显的
     uint16_t max_len = 0;
     for (int i = 0; i < count_final_sm_list; i++) {
         SCLogDebug("i %d final_sm_list[i] %d", i, final_sm_list[i]);
 
+        // 判断match是全局还是特殊
         if (final_sm_list[i] == DETECT_SM_LIST_PMATCH) {
             for (SigMatch *sm = s->init_data->smlists[DETECT_SM_LIST_PMATCH]; sm != NULL;
                     sm = sm->next) {
@@ -1219,6 +1253,7 @@ void RetrieveFPForSig(const DetectEngineCtx *de_ctx, Signature *s)
         }
     }
 
+    // 遍历使用GetMpmForList 函数查找最佳的快速模式匹配
     SigMatch *mpm_sm = NULL;
     int mpm_sm_list = -1;
     for (int i = 0; i < count_final_sm_list; i++) {
@@ -2397,13 +2432,18 @@ static void PatternFreeFunc(void *ptr)
  * \retval  0 On success.
  * \retval -1 On failure.
  */
+// FP: fast pattern 快速匹配签名
+// 快速匹配是从完整规则里找到最具有代表性的match
+// 用于快速判断是否命中该sig
 int DetectSetFastPatternAndItsId(DetectEngineCtx *de_ctx)
 {
     uint32_t cnt = 0;
     for (Signature *s = de_ctx->sig_list; s != NULL; s = s->next) {
+        // 跳过已经处理过的sig
         if (s->flags & SIG_FLAG_PREFILTER)
             continue;
 
+        // 提取快速匹配内容
         RetrieveFPForSig(de_ctx, s);
         if (s->init_data->mpm_sm != NULL) {
             s->flags |= SIG_FLAG_PREFILTER;
@@ -2419,6 +2459,7 @@ int DetectSetFastPatternAndItsId(DetectEngineCtx *de_ctx)
     BUG_ON(ht == NULL);
     PatIntId max_id = 0;
 
+    // 所有sig的快速匹配内容，放在一个链表里
     for (Signature *s = de_ctx->sig_list; s != NULL; s = s->next) {
         if (s->init_data->mpm_sm == NULL)
             continue;

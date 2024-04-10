@@ -39,6 +39,7 @@ int RunModeIdsPcapWorkers(void);
 void RunModeIdsPcapRegister(void)
 {
     // suricata的三种工作模式
+    // 下面注册时，倒数第二个线程，会在main中启动时调用
 
     // 单工作线程
     RunModeRegisterNewRunMode(RUNMODE_PCAP_DEV, "single", "Single threaded pcap live mode",

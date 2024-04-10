@@ -337,8 +337,9 @@ typedef struct SigMatchCtx_ {
 } SigMatchCtx;
 
 /** \brief a single match condition for a signature */
+// 一条suricata中的规则，会根据key解析成若干个SigMatch
 typedef struct SigMatch_ {
-    uint16_t type; /**< match type */
+    uint16_t type; /**< match type */  // 对应suricata规则中的key
     uint16_t idx; /**< position in the signature */
     SigMatchCtx *ctx; /**< plugin specific data */
     struct SigMatch_ *next;
@@ -511,6 +512,8 @@ typedef struct DetectEngineFrameInspectionEngine {
 
 typedef struct SignatureInitDataBuffer_ {
     uint32_t id;  /**< buffer id */
+    // 与当前缓冲区类型相关的Signature Match
+    // 例如http_uri 缓冲区存储与 HTTP URI 相关的匹配项
     bool sm_init; /**< initialized by sigmatch, which is likely something like `urilen:10; http.uri;
                      content:"abc";`. These need to be in the same list. Unset once `http.uri` is
                      set up. */
@@ -563,11 +566,17 @@ typedef struct SignatureInitData_ {
     int prefilter_list;
 
     /* holds built-in sm lists */
+    // match链表的数组，每一行为同种的match
+    // 这个链表里的match适用于所有数据包，不区分数据包类型
     struct SigMatch_ *smlists[DETECT_SM_LIST_MAX];
     /* holds built-in sm lists' tails */
+    // match链表尾的数组，每一行为同种match
     struct SigMatch_ *smlists_tail[DETECT_SM_LIST_MAX];
 
     /* Storage for buffers. */
+    // 缓冲区列表
+    // 每一项对应一种类型数据包的缓冲区
+    // sig里的各种match会分类放在这里面，数组每一项就是一组
     SignatureInitDataBuffer *buffers;
     uint32_t buffer_index;
     uint32_t buffers_size;
@@ -578,6 +587,7 @@ typedef struct SignatureInitData_ {
 } SignatureInitData;
 
 /** \brief Signature container */
+// 规则从文件加载到内存后的结构
 typedef struct Signature_ {
     uint32_t flags;
     /* coccinelle: Signature:flags:SIG_FLAG_ */
@@ -590,7 +600,7 @@ typedef struct Signature_ {
     uint8_t dsize_mode;
 
     SignatureMask mask;
-    SigIntId num; /**< signature number, internal id */
+    SigIntId num; /**< signature number, internal id */  // 编号
 
     /** inline -- action */
     uint8_t action;
@@ -826,8 +836,8 @@ enum DetectEngineType
 typedef struct DetectEngineCtx_ {
     bool failure_fatal;
     uint8_t flags;       /**< only DE_QUIET */
-    uint8_t mpm_matcher; /**< mpm matcher this ctx uses */
-    uint8_t spm_matcher; /**< spm matcher this ctx uses */
+    uint8_t mpm_matcher; /**< mpm matcher this ctx uses */  // 多模匹配器
+    uint8_t spm_matcher; /**< spm matcher this ctx uses */  // 单模匹配器
 
     uint32_t tenant_id;
 
@@ -851,6 +861,7 @@ typedef struct DetectEngineCtx_ {
     uint32_t non_pf_store_cnt_max;
 
     /* used by the signature ordering module */
+    // 排序函数链表，尾插构造，头优先
     struct SCSigOrderFunc_ *sc_sig_order_funcs;
 
     /* main sigs */
@@ -999,6 +1010,7 @@ typedef struct DetectEngineCtx_ {
 
     /* list of Fast Pattern registrations. Initially filled using a copy of
      * `g_fp_support_smlist_list`, then extended at rule loading time if needed */
+    // 初始使用g_fp_support_smlist_list填充
     SCFPSupportSMList *fp_support_smlist_list;
 
     /** per keyword flag indicating if a prefilter has been

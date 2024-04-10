@@ -34,6 +34,7 @@ typedef struct HashListTableBucket_ {
 } HashListTableBucket;
 
 /* hash table structure */
+// Hash表
 typedef struct HashListTable_ {
     HashListTableBucket **array;
     HashListTableBucket *listhead;

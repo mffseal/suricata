@@ -1987,15 +1987,18 @@ int SigGroupBuild(DetectEngineCtx *de_ctx)
         s = s->next;
     }
 
+    // 提取快速匹配内容
     if (DetectSetFastPatternAndItsId(de_ctx) < 0)
         return -1;
 
+    // 设置sgh_mpm多模匹配配置初始化
     SigInitStandardMpmFactoryContexts(de_ctx);
 
     if (SigAddressPrepareStage1(de_ctx) != 0) {
         FatalError("initializing the detection engine failed");
     }
 
+    // 规则预处理
     if (SigAddressPrepareStage2(de_ctx) != 0) {
         FatalError("initializing the detection engine failed");
     }

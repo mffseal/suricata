@@ -417,6 +417,8 @@ extern int rule_engine_analysis_set;
 static void DetectFlowbitsAnalyzeDump(const DetectEngineCtx *de_ctx,
         struct FBAnalyze *array, uint32_t elements);
 
+// 检查flowbit循环依赖、孤立等问题
+// 生成flowbit的sid，填充一些辅助规则匹配的数据
 int DetectFlowbitsAnalyze(DetectEngineCtx *de_ctx)
 {
     const uint32_t max_fb_id = de_ctx->max_fb_id;

@@ -457,6 +457,7 @@ void RunModeDispatch(int runmode, const char *custom_mode, const char *capture_p
     /* Check if the alloted queues have at least 1 reader and writer */
     TmValidateQueueState();
 
+    // 创建管理线程
     if (runmode != RUNMODE_UNIX_SOCKET) {
         /* spawn management threads */
         FlowManagerThreadSpawn();

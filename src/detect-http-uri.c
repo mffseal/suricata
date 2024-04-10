@@ -92,7 +92,7 @@ void DetectHttpUriRegister (void)
     sigmatch_table[DETECT_AL_HTTP_URI].name = "http_uri";
     sigmatch_table[DETECT_AL_HTTP_URI].desc = "content modifier to match specifically and only on the HTTP uri-buffer";
     sigmatch_table[DETECT_AL_HTTP_URI].url = "/rules/http-keywords.html#http-uri-and-http-uri-raw";
-    sigmatch_table[DETECT_AL_HTTP_URI].Setup = DetectHttpUriSetup;
+    sigmatch_table[DETECT_AL_HTTP_URI].Setup = DetectHttpUriSetup;  // 注册加载解析规则函数
 #ifdef UNITTESTS
     sigmatch_table[DETECT_AL_HTTP_URI].RegisterTests = DetectHttpUriRegisterTests;
 #endif
@@ -104,30 +104,38 @@ void DetectHttpUriRegister (void)
     sigmatch_table[DETECT_HTTP_URI].alias = "http.uri.normalized";
     sigmatch_table[DETECT_HTTP_URI].desc = "sticky buffer to match specifically and only on the normalized HTTP URI buffer";
     sigmatch_table[DETECT_HTTP_URI].url = "/rules/http-keywords.html#http-uri-and-http-uri-raw";
-    sigmatch_table[DETECT_HTTP_URI].Setup = DetectHttpUriSetupSticky;
+    sigmatch_table[DETECT_HTTP_URI].Setup = DetectHttpUriSetupSticky;  // 注册加载解析规则函数
     sigmatch_table[DETECT_HTTP_URI].flags |= SIGMATCH_NOOPT|SIGMATCH_INFO_STICKY_BUFFER;
 
+    // 注册应用层协议匹配引擎
     DetectAppLayerInspectEngineRegister2("http_uri", ALPROTO_HTTP1, SIG_FLAG_TOSERVER,
             HTP_REQUEST_LINE, DetectEngineInspectBufferGeneric, GetData);
 
+    // 注册应用层协议预编译的快速匹配引擎
     DetectAppLayerMpmRegister2("http_uri", SIG_FLAG_TOSERVER, 2, PrefilterGenericMpmRegister,
             GetData, ALPROTO_HTTP1, HTP_REQUEST_LINE);
 
+    // 注册应用层协议匹配引擎
     DetectAppLayerInspectEngineRegister2("http_uri", ALPROTO_HTTP2, SIG_FLAG_TOSERVER,
             HTTP2StateDataClient, DetectEngineInspectBufferGeneric, GetData2);
 
+    // 注册应用层协议预编译的快速匹配引擎
     DetectAppLayerMpmRegister2("http_uri", SIG_FLAG_TOSERVER, 2, PrefilterGenericMpmRegister,
             GetData2, ALPROTO_HTTP2, HTTP2StateDataClient);
 
+    // 设置字段描述
     DetectBufferTypeSetDescriptionByName("http_uri",
             "http request uri");
 
+    // 设置规则加载解析时的回调函数
     DetectBufferTypeRegisterSetupCallback("http_uri",
             DetectHttpUriSetupCallback);
 
+    // 设置规则加载解析时的回调函数
     DetectBufferTypeRegisterValidateCallback("http_uri",
             DetectHttpUriValidateCallback);
 
+    // 获取当前规则特征的ID
     g_http_uri_buffer_id = DetectBufferTypeGetByName("http_uri");
 
     /* http_raw_uri content modifier */

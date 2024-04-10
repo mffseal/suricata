@@ -126,6 +126,7 @@ void DetectFileRegisterFileProtocols(DetectFileHandlerTableElmt *reg)
 }
 
 /* Table with all SigMatch registrations */
+// 包含所有注册的IDS规则
 SigTableElmt sigmatch_table[DETECT_TBLSIZE];
 
 extern int sc_set_caps;
@@ -2100,6 +2101,8 @@ static int SigValidate(DetectEngineCtx *de_ctx, Signature *s)
  * \internal
  * \brief Helper function for SigInit().
  */
+// 规则字符串解析函数
+// 返回Signature对象
 static Signature *SigInitHelper(DetectEngineCtx *de_ctx, const char *sigstr,
                                 uint8_t dir)
 {
@@ -2263,6 +2266,7 @@ static bool SigHasSameSourceAndDestination(const Signature *s)
  */
 Signature *SigInit(DetectEngineCtx *de_ctx, const char *sigstr)
 {
+    // 这里进来之后，sigstr是suricata规则字符串。
     SCEnter();
 
     uint32_t oldsignum = de_ctx->signum;

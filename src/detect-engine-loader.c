@@ -350,6 +350,7 @@ int SigLoadSignatures(DetectEngineCtx *de_ctx, char *sig_file, int sig_file_excl
     }
 
     /* now we should have signatures to work with */
+    // 规则已经从文件加载到Signature链表，现在开始规则后处理
     if (sig_stat->good_sigs_total <= 0) {
         if (sig_stat->total_files > 0) {
             SCLogWarning(
@@ -369,8 +370,11 @@ int SigLoadSignatures(DetectEngineCtx *de_ctx, char *sig_file, int sig_file_excl
         goto end;
     }
 
+    // 注册排序函数
     SCSigRegisterSignatureOrderingFuncs(de_ctx);
+    // 执行排序
     SCSigOrderSignatures(de_ctx);
+    // 清除注册的排序函数
     SCSigSignatureOrderingModuleCleanup(de_ctx);
 
     if (SCThresholdConfInitContext(de_ctx) < 0) {

@@ -24,6 +24,7 @@
 #ifndef __DETECT_ENGINE_REGISTER_H__
 #define __DETECT_ENGINE_REGISTER_H__
 
+// suricata规则里的字段key
 enum DetectKeywordId {
     DETECT_SID,
     DETECT_PRIORITY,

@@ -505,6 +505,8 @@ static int SCSigLessThan(SCSigSignatureWrapper *sw1,
 {
     SCSigOrderFunc *funcs = cmp_func_list;
 
+    // 遍历比较函数，一旦比较出结果就返回
+    // 所以比较函数靠前的优先级更高
     while (funcs != NULL) {
         int delta = funcs->SWCompare(sw1, sw2);
         if (delta > 0)
@@ -520,11 +522,13 @@ static int SCSigLessThan(SCSigSignatureWrapper *sw1,
 
 /* Merge sort based on a list of compare functions
  * debug asserts are here to guide scan-build */
+// 使用比较函数链表进行归并排序
 static SCSigSignatureWrapper *SCSigOrder(SCSigSignatureWrapper *sw,
                                          SCSigOrderFunc *cmp_func_list)
 {
     DEBUG_VALIDATE_BUG_ON(sw == NULL);
 
+    // 初始化指针
     SCSigSignatureWrapper *subA = NULL;
     SCSigSignatureWrapper *subB = NULL;
     SCSigSignatureWrapper *first;
@@ -533,6 +537,9 @@ static SCSigSignatureWrapper *SCSigOrder(SCSigSignatureWrapper *sw,
     SCSigSignatureWrapper *last = NULL;
     SCSigSignatureWrapper *new = NULL;
 
+    // 拆分子链表A和B
+    // 每次取2个分别放入A和B
+    // A B数量差不超过1
     /* Divide input list into two sub-lists. */
     while (sw != NULL) {
         first = sw;
@@ -549,6 +556,7 @@ static SCSigSignatureWrapper *SCSigOrder(SCSigSignatureWrapper *sw,
         second->next = subB;
         subB = second;
     }
+    // 如果B为空，说明原始链表长度小于2，直接返回
     if (subB == NULL) {
         /* Only zero or one element on the list. */
         return subA;
@@ -556,13 +564,16 @@ static SCSigSignatureWrapper *SCSigOrder(SCSigSignatureWrapper *sw,
     DEBUG_VALIDATE_BUG_ON(subA == NULL);
 
     /* Now sort each list */
+    // 递归排序子链表A B
     subA = SCSigOrder(subA, cmp_func_list);
     subB = SCSigOrder(subB, cmp_func_list);
     DEBUG_VALIDATE_BUG_ON(subA == NULL);
     DEBUG_VALIDATE_BUG_ON(subB == NULL);
 
     /* Merge the two sorted lists. */
+    // 合并已排序的链表
     while (subA != NULL && subB != NULL) {
+        // 遍历使用比较函数链表，对比两个节点，确定节点顺序
         if (SCSigLessThan(subA, subB, cmp_func_list)) {
             new = subA;
             subA = subA->next;
@@ -581,6 +592,7 @@ static SCSigSignatureWrapper *SCSigOrder(SCSigSignatureWrapper *sw,
         }
     }
     /* Attach the rest of any remaining list. Only one can be non-NULL here. */
+    // 链接剩余链表
     if (subA == NULL)
         last->next = subB;
     else if (subB == NULL)
@@ -716,6 +728,7 @@ static inline SCSigSignatureWrapper *SCSigAllocSignatureWrapper(Signature *sig)
 
     /* Process data from the signature into a cache for further use by the
      * sig_ordering module */
+    // 获取指定match的操作类型
     SCSigProcessUserDataForFlowbits(sw);
     SCSigProcessUserDataForFlowvar(sw);
     SCSigProcessUserDataForFlowint(sw);
@@ -747,6 +760,8 @@ void SCSigOrderSignatures(DetectEngineCtx *de_ctx)
 #endif
     SCLogDebug("ordering signatures in memory");
 
+    // 从sig提取排序所需的一些数据，
+    // 然后重新包装在一起
     sig = de_ctx->sig_list;
     while (sig != NULL) {
         sigw = SCSigAllocSignatureWrapper(sig);
@@ -761,17 +776,20 @@ void SCSigOrderSignatures(DetectEngineCtx *de_ctx)
     }
 
     /* Sort the list */
+    // 执行归并排序
     sigw_list = SCSigOrder(sigw_list, de_ctx->sc_sig_order_funcs);
 
     SCLogDebug("Total Signatures to be processed by the"
            "sigordering module: %d", i);
 
     /* Recreate the sig list in order */
+    // 先清空原数据
     de_ctx->sig_list = NULL;
     sigw = sigw_list;
 #ifdef DEBUG
     i = 0;
 #endif
+    // 重新赋值排序后的Sig链表
     while (sigw != NULL) {
 #ifdef DEBUG
         i++;
@@ -808,6 +826,7 @@ void SCSigRegisterSignatureOrderingFuncs(DetectEngineCtx *de_ctx)
 {
     SCLogDebug("registering signature ordering functions");
 
+    // 将Order函数按顺序尾插入链表
     SCSigRegisterSignatureOrderingFunc(de_ctx, SCSigOrderByActionCompare);
     SCSigRegisterSignatureOrderingFunc(de_ctx, SCSigOrderByFlowbitsCompare);
     SCSigRegisterSignatureOrderingFunc(de_ctx, SCSigOrderByFlowintCompare);
