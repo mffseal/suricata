@@ -68,3 +68,7 @@ test.sh
 /libsuricata-config
 !/libsuricata-config.in
 !/.readthedocs.yaml
+.idea
+.vscode
+build
+compile_commands.json
